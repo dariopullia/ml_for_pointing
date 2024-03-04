@@ -44,7 +44,7 @@ def build_model(n_outputs, optimizable_parameters, train, validation, output_fol
     callbacks = [
         keras.callbacks.EarlyStopping(
             monitor='val_loss',
-            patience=3,
+            patience=7,
             verbose=1)
     ]    
 
@@ -236,5 +236,4 @@ def is_compatible(parameters, input_shape):
         return False
     else:
         return shape
-
 

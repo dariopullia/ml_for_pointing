@@ -39,7 +39,7 @@ model_name = input_json['model_name']
 n_outputs = input_json['n_outputs']
 
 output_folder = output_folder + model_name + '/'
-output_folder = output_folder + f"aug_coeff_{input_json['dataset_parameters']['aug_coefficient']}_loss_{input_json['model_parameters']['loss_function']}/"
+output_folder = output_folder + f"aug_coeff_{input_json['dataset_parameters']['aug_coefficient']}_loss_{input_json['model_parameters']['loss_function']}_nout_{n_outputs}/"
 
 
 if model_name == 'simple_cnn':
@@ -60,6 +60,9 @@ if __name__=='__main__':
     # Check if GPU is available
     print("GPU is", "available" if tf.config.list_physical_devices('GPU') else "NOT AVAILABLE")
 
+    print('Input json file: ', input_json_file)
+    print('Output folder: ', output_folder)
+    
     print('Starting the pipeline')
     print('Preparing the data')
     # Prepare the data

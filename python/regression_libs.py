@@ -26,7 +26,6 @@ def prepare_data(input_data, input_label, dataset_parameters, output_folder):
     aug_coefficient = dataset_parameters["aug_coefficient"]
     prob_per_flip = dataset_parameters["prob_per_flip"]
 
-
     if not os.path.exists(input_data) or not os.path.exists(input_label):
         print(input_data)
         print(input_label)
@@ -168,7 +167,12 @@ def save_labels_in_a_map(dataset_label, output_folder, name="map"):
     elif dataset_label.shape[1] == 2:
         plt.figure(figsize=(10, 10))
         plt.title("Labels map")
-        plt.scatter(dataset_label[:,0], dataset_label[:,1], label="Predictions")
+        x_label, y_label = dataset_label[:,0], dataset_label[:,1]
+        # normalize the labels
+        r = np.sqrt(x_label**2 + y_label**2)
+        x_label = x_label/r
+        y_label = y_label/r
+        plt.scatter(x_label, y_label, label="Predictions")
         plt.legend(loc='upper right')
         plt.savefig(output_folder+name+"_theta_phi_hist.png")
         plt.clf()
@@ -191,7 +195,7 @@ def save_samples_from_ds(dataset, labels, output_folder, name="img", n_samples=1
 def from_coordinate_to_theta_phi(coords):
     # nomalize the coordinates
     coords = coords/np.linalg.norm(coords, axis=1)[:, np.newaxis]
-    x, y, z = coords[:,0], coords[:,1], coords[:,2]
+    x, y, z = coords[:,2], coords[:,1], coords[:,0]
     r = np.sqrt(x**2 + y**2 + z**2)
     # theta is in [0, pi]
     theta = np.arccos(z/r)
@@ -205,22 +209,41 @@ def data_augmentation(dataset, labels, coefficient=2, prob_per_flip=0.5):
     augmented_dataset = []
     augmented_labels = []
     # for each sample
-    for i in range(int(coefficient*len(dataset))):
-        index = np.random.randint(0, len(dataset))
-        # get the sample
-        sample = dataset[index]
-        # get the label
-        label = labels[index]
-        if np.random.rand() > prob_per_flip:
-            # flip the sample
-            sample = np.flipud(sample)
-            label[0] = -label[0]
-        if np.random.rand() > prob_per_flip:
-            sample = np.fliplr(sample)
-            label[2] = -label[2]
-        augmented_dataset.append(sample)
-        augmented_labels.append(label)
-    
+    if (labels.shape[1]) == 3:
+        for i in range(int(coefficient*len(dataset))):
+            index = np.random.randint(0, len(dataset))
+            # get the sample
+            sample = dataset[index]
+            # get the label
+            label = labels[index]
+            new_label = [label[0], label[1], label[2]]
+            if np.random.rand() > prob_per_flip:
+                # flip the sample
+                sample = np.flipud(sample)
+                new_label[0] = -label[0]
+            if np.random.rand() > prob_per_flip:
+                sample = np.fliplr(sample)
+                new_label[2] = -label[2]
+            augmented_dataset.append(sample)
+            augmented_labels.append(new_label)
+    elif (labels.shape[1]) == 2:
+        for i in range(int(coefficient*len(dataset))):
+            index = np.random.randint(0, len(dataset))
+            # get the sample
+            sample = dataset[index]
+            # get the label
+            label = labels[index]
+            new_label = [label[0], label[1]]
+            if np.random.rand() > prob_per_flip:
+                # flip the sample
+                sample = np.flipud(sample)
+                new_label[0] = -label[0]
+            if np.random.rand() > prob_per_flip:
+                sample = np.fliplr(sample)
+                new_label[1] = -label[1]
+            augmented_dataset.append(sample)
+            augmented_labels.append(new_label)
+
     return np.array(augmented_dataset), np.array(augmented_labels)
 
 def my_loss_function(y_true, y_pred):
