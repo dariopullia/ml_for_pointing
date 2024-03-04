@@ -19,24 +19,29 @@ from tensorflow.keras.layers import add, concatenate, multiply, Permute
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras import backend as K
 
-def DUNECVNModel(width=1,
-                 weight_decay=1e-4,
-                 weights=None,
+def DUNECVNModel(initial_conv_filters=64,
+                depth=[3, 4, 6],
+                filters=[64, 128, 256],
+                width=1,
+                weight_decay=1e-4,
+                weights=None,
                 input_names=['view0'],
                 input_shapes=[[70,1000,1]],
-                output_neurons=7):
+                output_neurons=7):   
                 
-    return SEResNetB(depth=[3, 4, 6, 3],
-                    width=width,
-                    weight_decay=weight_decay,
-                    weights=weights,
-                    input_names=input_names,
-                    input_shapes=input_shapes,
-                    output_neurons=output_neurons)
+    return SEResNetB(initial_conv_filters=initial_conv_filters,
+                depth=depth,
+                filters=filters,
+                width=width,
+                weight_decay=weight_decay,
+                weights=weights,
+                input_names=input_names,
+                input_shapes=input_shapes,
+                output_neurons=output_neurons)
 
 def SEResNetB(initial_conv_filters=64,
-              depth=[3, 4, 6, 3],
-              filters=[64, 128, 256, 512],
+              depth=[3, 4, 6],
+              filters=[64, 128, 256],
               width=1,
               weight_decay=1e-4,
               weights=None,
@@ -70,8 +75,6 @@ def SEResNetB(initial_conv_filters=64,
     x = _create_se_resnet_with_branches(inputs, initial_conv_filters,
                           filters, depth, width, weight_decay)
 
-    # add a dense layer
-    x = Dense(512, activation='relu')(x)
     # add a dense layer
     x = Dense(256, activation='relu')(x)
     # add a dense layer

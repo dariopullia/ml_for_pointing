@@ -24,13 +24,14 @@ def create_and_train_model(n_outputs, model_parameters, train, validation, outpu
         loss_function = model_parameters['loss_function']
 
     print("Building the model...")
-    model = DUNECVNModel(width=1,
-                weight_decay=1e-4,
-                weights=None,
-                input_names=['view0'],
-                input_shapes=[input_shape],
-                output_neurons=n_outputs)
-
+    model = DUNECVNModel(initial_conv_filters=model_parameters['initial_conv_filters'],
+                            depth=model_parameters['depth'],
+                            filters=model_parameters['filters'],
+                            width=model_parameters['width'],
+                            weight_decay=model_parameters['weight_decay'],
+                            input_shapes=[input_shape],
+                            output_neurons=n_outputs)
+                            
     # Compile the model
     print("Compiling the model...")
     # add learning ratescheduler
@@ -48,7 +49,7 @@ def create_and_train_model(n_outputs, model_parameters, train, validation, outpu
     callbacks = [
         keras.callbacks.EarlyStopping(
             monitor='val_loss',
-            patience=3,
+            patience=6,
             verbose=1)
     ]    
 
@@ -56,7 +57,7 @@ def create_and_train_model(n_outputs, model_parameters, train, validation, outpu
                         epochs=200, 
                         validation_data=validation, 
                         callbacks=callbacks,
-                        verbose=0)
+                        verbose=1)
     
     return model, history
 
