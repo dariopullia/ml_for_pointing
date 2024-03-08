@@ -47,6 +47,8 @@ def prepare_data(input_data, input_label, dataset_parameters, output_folder):
     print("dataset_img type: ", type(dataset_img))
     print("dataset_lab type: ", type(dataset_label))
 
+    print("SET Y TO 0")
+    dataset_label[:,1] = 0
     # Remove the direction
     if remove_y_direction:
         print("Removing the direction...")
@@ -124,6 +126,47 @@ def test_model(model, test, output_folder):
 def log_metrics(test_labels, predictions, output_folder):
     save_labels_in_a_map(test_labels, output_folder, name="map_true")
     save_labels_in_a_map(predictions, output_folder, name="map_predictions")
+    plot_diff(test_labels, predictions, output_folder)
+
+def plot_diff(test_labels, predictions, output_folder):
+    # plot the difference between the true and predicted labels
+    if test_labels.shape[1] == 3:
+        angles_true = from_coordinate_to_theta_phi(test_labels)
+        angles_pred = from_coordinate_to_theta_phi(predictions)
+        thetas_true, phis_true = angles_true[:,0], angles_true[:,1]
+        thetas_pred, phis_pred = angles_pred[:,0], angles_pred[:,1]
+        plt.figure(figsize=(10, 10))
+        plt.title("Difference in Theta")
+        plt.hist(thetas_true-thetas_pred, bins=100, alpha=0.5, label="Theta")
+        plt.legend(loc='upper right')
+        plt.savefig(output_folder+"theta_diff_hist.png")
+        plt.clf()
+        plt.figure(figsize=(10, 10))
+        plt.title("Difference in Phi")
+        plt.hist(phis_true-phis_pred, bins=100, alpha=0.5, label="Phi")
+        plt.legend(loc='upper right')
+        plt.savefig(output_folder+"phi_diff_hist.png")
+        plt.clf()
+    elif test_labels.shape[1] == 2:
+        x_true, y_true = test_labels[:,0], test_labels[:,1]
+        x_pred, y_pred = predictions[:,0], predictions[:,1]
+        # normalize the labels
+        r = np.sqrt(x_true**2 + y_true**2)
+        x_true = x_true/r
+        y_true = y_true/r
+        r = np.sqrt(x_pred**2 + y_pred**2)
+        x_pred = x_pred/r
+        y_pred = y_pred/r
+
+        theta_true = np.arctan2(y_true, x_true)
+        theta_pred = np.arctan2(y_pred, x_pred)
+        plt.figure(figsize=(10, 10))
+        plt.title("Difference in Theta")
+        plt.hist(theta_true-theta_pred, bins=100, alpha=0.5, label="Theta")
+        plt.legend(loc='upper right')
+        plt.savefig(output_folder+"theta_diff_hist.png")
+        plt.clf()
+        
 
 def save_labels_in_a_map(dataset_label, output_folder, name="map"):
     if dataset_label.shape[1] == 3:
@@ -195,7 +238,7 @@ def save_samples_from_ds(dataset, labels, output_folder, name="img", n_samples=1
 def from_coordinate_to_theta_phi(coords):
     # nomalize the coordinates
     coords = coords/np.linalg.norm(coords, axis=1)[:, np.newaxis]
-    x, y, z = coords[:,2], coords[:,1], coords[:,0]
+    x, y, z = coords[:,0], coords[:,2], coords[:,1]
     r = np.sqrt(x**2 + y**2 + z**2)
     # theta is in [0, pi]
     theta = np.arccos(z/r)

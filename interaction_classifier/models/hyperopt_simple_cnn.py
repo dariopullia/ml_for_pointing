@@ -13,7 +13,7 @@ sys.path.append("../../python/")
 import general_purpose_libs as gpl
 import regression_libs as rl
 
-def build_model(n_outputs, optimizable_parameters, train, validation, output_folder, input_shape, loss_function='mean_squared_error'):
+def build_model(optimizable_parameters, train, validation, output_folder, input_shape):
     
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Conv2D(optimizable_parameters['n_filters'], (optimizable_parameters['kernel_size'], 1), activation='relu', input_shape=input_shape))
@@ -28,7 +28,7 @@ def build_model(n_outputs, optimizable_parameters, train, validation, output_fol
         model.add(layers.Dense(optimizable_parameters['n_dense_units']//(i+1), activation='relu'))
         model.add(layers.LeakyReLU(alpha=0.05))
     
-    model.add(layers.Dense(n_outputs, activation='linear'))  
+    model.add(layers.Dense(2, activation='softmax'))  
 
     lr_schedule = keras.optimizers.schedules.ExponentialDecay(
         initial_learning_rate=optimizable_parameters['learning_rate'],
@@ -37,7 +37,7 @@ def build_model(n_outputs, optimizable_parameters, train, validation, output_fol
     
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
-        loss=loss_function,
+        loss='categorical_crossentropy',
         metrics=['accuracy'])   
 
     # Stop training when `val_loss` is no longer improving
@@ -56,14 +56,8 @@ def build_model(n_outputs, optimizable_parameters, train, validation, output_fol
 
     return model, history
 
-def create_and_train_model(n_outputs, model_parameters, train, validation, output_folder, model_name):
+def create_and_train_model(model_parameters, train, validation, output_folder, model_name):
     space_options = model_parameters['space_options']
-    if model_parameters['loss_function'] == 'my_loss_function':
-        loss_function = rl.my_loss_function
-    elif model_parameters['loss_function'] == 'my_loss_function_both_dir':
-        loss_function = rl.my_loss_function_both_dir
-    else:
-        loss_function = model_parameters['loss_function']
 
     input_shape = model_parameters['input_shape']
     hp_max_evals = model_parameters['hp_max_evals']
@@ -84,10 +78,8 @@ def create_and_train_model(n_outputs, model_parameters, train, validation, outpu
         fn=lambda x: hypertest_model(  optimizable_parameters=x, 
                                         train=train, 
                                         validation=validation, 
-                                        n_outputs=n_outputs, 
                                         output_folder=output_folder,
-                                        input_shape=input_shape,
-                                        loss_function=loss_function
+                                        input_shape=input_shape
                                         ),
         space=space,
         algo=hp.tpe.suggest,
@@ -119,14 +111,11 @@ def create_and_train_model(n_outputs, model_parameters, train, validation, outpu
     print("Best parameters saved.")
     # Save the best model
     print("Saving the best model...")
-    model, history = build_model( n_outputs=n_outputs, 
-                                    optimizable_parameters=best_dict, 
-                                    train=train, 
-                                    validation=validation,
-                                    output_folder=output_folder, 
-                                    input_shape=input_shape,
-                                    loss_function=loss_function
-                                    )
+    model, history = build_model(optimizable_parameters=best_dict, 
+                                train=train, 
+                                validation=validation,
+                                output_folder=output_folder, 
+                                input_shape=input_shape)
     print("Model built.")
     print("Plotting the hyperparameter search...")
     plot_hyperparameter_search(trials, output_folder, model_name)
@@ -197,20 +186,19 @@ def plot_hyperparameter_search(trials, output_folder, model_name):
     # plt.savefig(output_folder + model_name + '_hyperparameter_search.png')
     # plt.close()
 
-def hypertest_model(optimizable_parameters, train, validation, n_outputs, output_folder, input_shape, loss_function='mean_squared_error'):
+def hypertest_model(optimizable_parameters, train, validation, output_folder, input_shape):
     is_comp=is_compatible(optimizable_parameters, input_shape)
     if not is_comp:
         return {'loss': 9999, 'status': hp.STATUS_FAIL}
     else:
         print(is_comp)
 
-    model, history = build_model(n_outputs=n_outputs, 
-                                optimizable_parameters=optimizable_parameters, 
+    model, history = build_model(optimizable_parameters=optimizable_parameters, 
                                 train=train, 
                                 validation=validation, 
                                 output_folder=output_folder, 
-                                input_shape=input_shape, 
-                                loss_function=loss_function)
+                                input_shape=input_shape)
+
     loss, accuracy=model.evaluate(validation)
     print("loss: ", loss, " accuracy: ", accuracy)
     with open(output_folder+"hyperopt_progression.txt", "a") as f:
