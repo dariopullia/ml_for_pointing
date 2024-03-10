@@ -45,6 +45,8 @@ if model_name == 'simple_cnn':
     import models.simple_cnn as selected_model
 elif model_name == 'hyperopt_simple_cnn':
     import models.hyperopt_simple_cnn as selected_model
+elif model_name == 'hyperopt_simple_cnn_multiclass':
+    import models.hyperopt_simple_cnn_multiclass as selected_model
 elif model_name == 'cvn_regression':
     import models.cvn_classification as selected_model
 else:
@@ -85,7 +87,7 @@ if __name__=='__main__':
 
     # Test the model
     print('Testing the model')
-    cl.test_model(model, test, output_folder, label_names=["CC", "ES"])
+    cl.test_model(model, test, output_folder, label_names=["bkg+blips", "main track"])
 
     # Create the report
     gpl.create_report(output_folder, model_name, input_json, inspect.getsource(selected_model.create_and_train_model))

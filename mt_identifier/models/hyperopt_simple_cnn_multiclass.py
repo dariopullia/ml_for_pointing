@@ -13,7 +13,7 @@ sys.path.append("../../python/")
 import general_purpose_libs as gpl
 import regression_libs as rl
 
-def build_model(optimizable_parameters, train, validation, output_folder, input_shape):
+def build_model(optimizable_parameters, train, validation, output_folder, input_shape, n_output):
     
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Conv2D(optimizable_parameters['n_filters'], (optimizable_parameters['kernel_size'], 1), activation='relu', input_shape=input_shape))
@@ -28,7 +28,7 @@ def build_model(optimizable_parameters, train, validation, output_folder, input_
         model.add(layers.Dense(optimizable_parameters['n_dense_units']//(i+1), activation='relu'))
         model.add(layers.LeakyReLU(alpha=0.05))
     
-    model.add(layers.Dense(1, activation='sigmoid'))  
+    model.add(layers.Dense(n_output, activation='softmax'))  
 
     lr_schedule = keras.optimizers.schedules.ExponentialDecay(
         initial_learning_rate=optimizable_parameters['learning_rate'],
@@ -37,14 +37,14 @@ def build_model(optimizable_parameters, train, validation, output_folder, input_
     
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
-        loss='binary_crossentropy',
+        loss='category_crossentropy',
         metrics=['accuracy'])   
 
     # Stop training when `val_loss` is no longer improving
     callbacks = [
         keras.callbacks.EarlyStopping(
             monitor='val_loss',
-            patience=9,
+            patience=4,
             verbose=1)
     ]    
 
@@ -57,8 +57,26 @@ def build_model(optimizable_parameters, train, validation, output_folder, input_
     return model, history
 
 def create_and_train_model(model_parameters, train, validation, output_folder, model_name):
-    space_options = model_parameters['space_options']
+    # test_labels = np.array([label for _, label in test], dtype=object)
+    # test_labels = np.concatenate(test_labels, axis=0)
+    train_img = np.array([img for img, _ in train], dtype=object)
+    train_img = np.concatenate(train_img, axis=0)
+    validation_img = np.array([img for img, _ in validation], dtype=object)
+    validation_img = np.concatenate(validation_img, axis=0)
+    train_labels = np.array([label for _, label in train], dtype=object)
+    train_labels = np.concatenate(train_labels, axis=0)
+    validation_labels = np.array([label for _, label in validation], dtype=object)
+    validation_labels = np.concatenate(validation_labels, axis=0)
 
+    train_labels = keras.utils.to_categorical(train_labels)
+    validation_labels = keras.utils.to_categorical(validation_labels)
+
+    train = (train_img, train_labels)
+    validation = (validation_img, validation_labels)
+        
+
+    space_options = model_parameters['space_options']
+    n_output = model_parameters['n_output']
     input_shape = model_parameters['input_shape']
     hp_max_evals = model_parameters['hp_max_evals']
 
@@ -79,7 +97,8 @@ def create_and_train_model(model_parameters, train, validation, output_folder, m
                                         train=train, 
                                         validation=validation, 
                                         output_folder=output_folder,
-                                        input_shape=input_shape
+                                        input_shape=input_shape,
+                                        n_output=n_output
                                         ),
         space=space,
         algo=hp.tpe.suggest,
@@ -115,7 +134,8 @@ def create_and_train_model(model_parameters, train, validation, output_folder, m
                                 train=train, 
                                 validation=validation,
                                 output_folder=output_folder, 
-                                input_shape=input_shape)
+                                input_shape=input_shape,
+                                n_output=n_output)
     print("Model built.")
     print("Plotting the hyperparameter search...")
     plot_hyperparameter_search(trials, output_folder, model_name)
@@ -168,7 +188,7 @@ def plot_hyperparameter_search(trials, output_folder, model_name):
     plt.xlabel('decay_rate')
     plt.ylabel('Loss')
     plt.legend()
-    plt.subplot(3, 3, 9)
+    plt.subplot(3, 3, 8)
     plt.title('Loss vs Trial ID')
     plt.scatter([t['tid'] for t in trials], [-t['result']['loss'] for t in trials], s=20, alpha=0.3, label='loss')
     plt.xlabel('Trial ID')
@@ -186,7 +206,7 @@ def plot_hyperparameter_search(trials, output_folder, model_name):
     # plt.savefig(output_folder + model_name + '_hyperparameter_search.png')
     # plt.close()
 
-def hypertest_model(optimizable_parameters, train, validation, output_folder, input_shape):
+def hypertest_model(optimizable_parameters, train, validation, output_folder, input_shape, n_output):
     is_comp=is_compatible(optimizable_parameters, input_shape)
     if not is_comp:
         return {'loss': 9999, 'status': hp.STATUS_FAIL}
@@ -197,7 +217,8 @@ def hypertest_model(optimizable_parameters, train, validation, output_folder, in
                                 train=train, 
                                 validation=validation, 
                                 output_folder=output_folder, 
-                                input_shape=input_shape)
+                                input_shape=input_shape,
+                                n_output=n_output)
 
     loss, accuracy=model.evaluate(validation)
     print("loss: ", loss, " accuracy: ", accuracy)

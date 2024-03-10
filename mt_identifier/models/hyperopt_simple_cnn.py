@@ -44,7 +44,7 @@ def build_model(optimizable_parameters, train, validation, output_folder, input_
     callbacks = [
         keras.callbacks.EarlyStopping(
             monitor='val_loss',
-            patience=9,
+            patience=4,
             verbose=1)
     ]    
 

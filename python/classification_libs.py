@@ -41,6 +41,17 @@ def prepare_data(input_data, input_label, dataset_parameters, output_folder):
     print("Loading the dataset...")
     dataset_img = np.load(input_data, allow_pickle=True)
     dataset_label = np.load(input_label)
+    # remove images where np.sum is 655350000
+    print("Removing corrupted images...")
+    corrupted_images = []
+    for i in range(dataset_img.shape[0]):
+        if (np.sum(dataset_img[i])==655350000):
+            corrupted_images.append(i)
+    print("Corrupted images: ", len(corrupted_images))
+    dataset_img = np.delete(dataset_img, corrupted_images, axis=0)
+    dataset_label = np.delete(dataset_label, corrupted_images, axis=0)
+    
+
     print("Dataset loaded.")
     print("Dataset_img shape: ", dataset_img.shape)
     print("Dataset_lab shape: ", dataset_label.shape)
@@ -86,11 +97,16 @@ def prepare_data(input_data, input_label, dataset_parameters, output_folder):
         train_images, train_labels = data_augmentation(train_images, train_labels, coefficient=aug_coefficient, prob_per_flip=prob_per_flip)
         print("Train images shape after: ", train_images.shape)
         print("Data augmented.")
+    
+    print("Unique labels: ", np.unique(train_labels, return_counts=True))
 
-    train = tf.data.Dataset.from_tensor_slices((train_images, train_labels)).shuffle(10000).batch(32)
-    validation = tf.data.Dataset.from_tensor_slices((validation_images, validation_labels)).batch(32)
-    test = tf.data.Dataset.from_tensor_slices((test_images, test_labels)).batch(32)
-
+    # Create the datasets
+    print("Creating the dataset objects...")
+    with tf.device("CPU"):
+        train = tf.data.Dataset.from_tensor_slices((train_images, train_labels)).shuffle(10000).batch(32)
+        validation = tf.data.Dataset.from_tensor_slices((validation_images, validation_labels)).batch(32)
+        test = tf.data.Dataset.from_tensor_slices((test_images, test_labels)).batch(32)
+    print("Datasets created.")
     return train, validation, test
 
 def data_augmentation(dataset, labels, coefficient=2, prob_per_flip=0.5):
@@ -113,25 +129,22 @@ def data_augmentation(dataset, labels, coefficient=2, prob_per_flip=0.5):
         augmented_labels.append(label)
     return np.array(augmented_dataset), np.array(augmented_labels)
 
-def calculate_metrics( y_true, y_pred,):
+def calculate_metrics(y_true, y_pred,):
     # calculate the confusion matrix, the accuracy, and the precision and recall 
     # binary trick
-    y_pred_am = np.argmax(y_pred, axis=1)
-    # y_pred_am = np.where(y_pred > 0.5, 1, 0)
-    y_true_am = np.argmax(y_true, axis=1)
-    cm = confusion_matrix(y_true_am, y_pred_am, normalize='true')
+    y_pred_am = np.where(y_pred > 0.5, 1, 0)
+    cm = confusion_matrix(y_true, y_pred_am, normalize='true')
     # compute precision matrix
     
 
-    accuracy = accuracy_score(y_true_am, y_pred_am)
-    precision = precision_score(y_true_am, y_pred_am, average='macro')
-    recall = recall_score(y_true_am, y_pred_am, average='macro')
-    f1 = f1_score(y_true_am, y_pred_am, average='macro')
+    accuracy = accuracy_score(y_true, y_pred_am)
+    precision = precision_score(y_true, y_pred_am, average='macro')
+    recall = recall_score(y_true, y_pred_am, average='macro')
+    f1 = f1_score(y_true, y_pred_am, average='macro')
 
     return cm, accuracy, precision, recall, f1
     
-def log_metrics(y_true, y_pred, output_folder=""):
-    label_names = ["CC", "ES"]
+def log_metrics(y_true, y_pred, output_folder="", label_names=["CC", "ES"]):
     cm, accuracy, precision, recall, f1 = calculate_metrics(y_true, y_pred)
     print("Confusion Matrix")
     print(cm)
@@ -158,21 +171,15 @@ def log_metrics(y_true, y_pred, output_folder=""):
     plt.xlabel('Predicted label', fontsize=28)
     plt.savefig(output_folder+f"confusion_matrix.png")
     plt.clf()
-    # Compute ROC curve and ROC area for each class
     # Binarize the output
     y_test = label_binarize(y_true, classes=np.arange(len(label_names)))
     n_classes = y_test.shape[1]
     
-    fpr = dict()
-    tpr = dict()
-
     plt.figure()
-    for i in range(n_classes):
-    # binary trick
-        # fpr[i], tpr[i], _ = roc_curve(y_true[:, i], np.where(y_pred > 0.5, np.array([0,1]), np.array([1,0]))[:, i])
-        fpr[i], tpr[i], _ = roc_curve(y_true[:, i], y_pred[:, i])
-        roc_auc = auc(fpr[i], tpr[i])
-        plt.plot(fpr[i], tpr[i], lw=2, label='ROC curve of class {0} (area = {1:0.2f})'.format(label_names[i], roc_auc))
+
+    fpr, tpr, _ = roc_curve(y_true[:], y_pred[:])
+    roc_auc = auc(fpr, tpr)
+    plt.plot(fpr, tpr, lw=2, label='ROC curve (area = {0:0.2f})'.format(roc_auc))
 
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
     plt.xlabel('False Positive Rate', fontsize=28)
@@ -182,13 +189,16 @@ def log_metrics(y_true, y_pred, output_folder=""):
     plt.savefig(output_folder+"roc_curve.png")
     plt.clf()
     # create an histogram of the predictions
-    bkg_preds = y_pred[y_true[:, 0] > 0.5][:, 1]
-    sig_preds = y_pred[y_true[:, 1] > 0.5][:, 1]
+    print(y_pred.shape)
+    print(y_true.shape)
+    y_true = np.reshape(y_true, (y_true.shape[0],))
+    bkg_preds = y_pred[y_true < 0.5]
+    sig_preds = y_pred[y_true > 0.5]
     print("Background predictions: ", bkg_preds.shape)
     print("Signal predictions: ", sig_preds.shape)
 
-    plt.hist(bkg_preds, bins=50, alpha=0.5, label=f'Background (n={bkg_preds.shape[0]})')
-    plt.hist(sig_preds, bins=50, alpha=0.5, label=f'Signal (n={sig_preds.shape[0]})')
+    plt.hist(bkg_preds, bins=50, alpha=0.5, label=f'{label_names[0]} (n={bkg_preds.shape[0]})')
+    plt.hist(sig_preds, bins=50, alpha=0.5, label=f'{label_names[1]} (n={sig_preds.shape[0]})')
     plt.legend(loc='upper right')
     plt.xlabel('Prediction')
     plt.ylabel('Counts')
@@ -282,7 +292,7 @@ def save_samples_from_ds(dataset, labels, output_folder, name="img", n_samples_p
         plt.savefig(output_folder+ 'all_'+str(label)+'.png')
         plt.clf()
 
-def test_model(model, test, output_folder):
+def test_model(model, test, output_folder, label_names=["CC", "ES"]):
     print("Doing some test...")
     predictions = model.predict(test)      
     # Calculate metrics
@@ -290,9 +300,61 @@ def test_model(model, test, output_folder):
     # get the test labels from the test dataset
     test_labels = np.array([label for _, label in test], dtype=object)
     test_labels = np.concatenate(test_labels, axis=0)
-    log_metrics(test_labels, predictions, output_folder=output_folder)
+    log_metrics(test_labels, predictions, output_folder=output_folder, label_names=label_names)
     print("Metrics calculated.")
     print("Drawing model...")
     keras.utils.plot_model(model, output_folder+"architecture.png", show_shapes=True)
     print("Model drawn.")
+    print("Drawing histogram of energies...")
+    test_img = np.array([img for img, _ in test], dtype=object)
+    test_img = np.concatenate(test_img, axis=0)
+    
+    histogram_of_enegies(test_labels, predictions, test_img, limit=0.5, output_folder=output_folder)
+
     print("Test done.")
+
+def histogram_of_enegies(test_labels, predictions, images, limit=0.5, output_folder=""):
+    # check if some images are corrupted
+    corrupted_images = []
+    for i in range(images.shape[0]):
+        if (np.sum(images[i])==0):
+            corrupted_images.append(i)
+    print("Corrupted images: ", len(corrupted_images))
+
+
+    true_positives = []
+    true_negatives = []
+    false_positives = []
+    false_negatives = []
+    all_images = []
+    for i in range(len(test_labels)):
+        if test_labels[i] == 1 and predictions[i] > limit:
+            true_positives.append(np.sum(images[i]))
+        elif test_labels[i] == 0 and predictions[i] < limit:
+            true_negatives.append(np.sum(images[i]))
+        elif test_labels[i] == 0 and predictions[i] > limit:
+            false_positives.append(np.sum(images[i]))
+        elif test_labels[i] == 1 and predictions[i] < limit:
+            false_negatives.append(np.sum(images[i]))
+        all_images.append(np.sum(images[i]))
+    
+    print("True Positives: ", len(true_positives))
+    print("True Negatives: ", len(true_negatives))
+    print("False Positives: ", len(false_positives))
+    print("False Negatives: ", len(false_negatives))
+    print("All images: ", len(all_images))
+    print(np.unique(np.array(all_images), return_counts=True))
+
+    # sum the pixel values
+    plt.figure()
+    plt.hist(true_positives, range=(0, 3e6), bins=50, alpha=0.5, label='True Positives (n='+str(len(true_positives))+')')
+    plt.hist(true_negatives, range=(0, 3e6), bins=50, alpha=0.5, label='True Negatives (n='+str(len(true_negatives))+')')
+    plt.hist(false_positives, range=(0, 3e6), bins=50, alpha=0.5, label='False Positives (n='+str(len(false_positives))+')')
+    plt.hist(false_negatives, range=(0, 3e6), bins=50, alpha=0.5, label='False Negatives (n='+str(len(false_negatives))+')')
+
+    plt.legend(loc='upper right')
+    plt.xlabel('Pixel value')
+    plt.ylabel('Counts')
+    plt.title('Pixel value histogram')
+    plt.savefig(output_folder+"pixel_value_histogram.png")
+    plt.clf()
