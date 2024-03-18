@@ -53,6 +53,17 @@ def prepare_data(input_data, input_label, dataset_parameters, output_folder):
     if remove_y_direction:
         print("Removing the direction...")
         dataset_label = np.delete(dataset_label, 1, axis=1)
+    
+    # Normalize the labels
+    print("Normalizing the labels...")
+    if dataset_label.shape[1] == 3:
+        dataset_label = dataset_label/np.linalg.norm(dataset_label, axis=1)[:, np.newaxis]
+    elif dataset_label.shape[1] == 2:
+        r = np.sqrt(dataset_label[:,0]**2 + dataset_label[:,1]**2)
+        dataset_label[:,0] = dataset_label[:,0]/r
+        dataset_label[:,1] = dataset_label[:,1]/r
+    print("Labels normalized.")
+
 
     if not os.path.exists(output_folder+"samples/"):
         os.makedirs(output_folder+"samples/")

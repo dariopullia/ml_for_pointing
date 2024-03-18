@@ -17,11 +17,16 @@ pylab.rcParams.update(params)
 
 def create_report(output_folder, model_name, input_json, model_function):
     # create the report
+    dataset_lab = np.load(input_json["input_label"])
     with open(output_folder+"report.txt", "w") as f:
         f.write("Model name: "+model_name+"\n")
+        f.write("Input label: "+input_json["input_label"]+"\n")
+        f.write("Input data: "+input_json["input_data"]+"\n")
+        f.write("Unique labels: "+str(np.unique(dataset_lab, return_counts=True))+"\n")
         f.write("Input json: \n"+json.dumps(input_json, indent=4)+"\n")
         f.write("Model function: \n"+model_function+"\n")
-    
+
+
 def save_sample_img(ds_item, output_folder, img_name):
     if ds_item.shape[2] == 1:
         img = ds_item[:,:,0]
