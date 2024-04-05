@@ -1,7 +1,7 @@
 import sys
 import os
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 import matplotlib.pylab as pylab
 import seaborn as sns
 import hyperopt as hp
@@ -103,6 +103,9 @@ def prepare_data(input_data, input_label, dataset_parameters, output_folder):
     train_labels = dataset_label[:int(dataset_label.shape[0]*training_fraction)]
     validation_labels = dataset_label[int(dataset_label.shape[0]*training_fraction):int(dataset_label.shape[0]*training_fraction)+int(dataset_label.shape[0]*validation_fraction)]
     test_labels = dataset_label[int(dataset_label.shape[0]*training_fraction)+int(dataset_label.shape[0]*validation_fraction):]
+    # save test set for further analysis
+    np.save(output_folder+"test_images.npy", test_images)
+    np.save(output_folder+"test_labels.npy", test_labels)
     print("Dataset splitted.")
 
     if aug_coefficient>1:
@@ -176,8 +179,7 @@ def plot_diff(test_labels, predictions, output_folder):
         plt.hist(theta_true-theta_pred, bins=100, alpha=0.5, label="Theta")
         plt.legend(loc='upper right')
         plt.savefig(output_folder+"theta_diff_hist.png")
-        plt.clf()
-        
+        plt.clf()      
 
 def save_labels_in_a_map(dataset_label, output_folder, name="map"):
     if dataset_label.shape[1] == 3:
@@ -226,10 +228,17 @@ def save_labels_in_a_map(dataset_label, output_folder, name="map"):
         r = np.sqrt(x_label**2 + y_label**2)
         x_label = x_label/r
         y_label = y_label/r
-        plt.scatter(x_label, y_label, label="Predictions")
+        theta_label = np.arctan2(y_label, x_label)
+        plt.hist(theta_label, bins=50, alpha=0.5, label="Theta")
         plt.legend(loc='upper right')
         plt.savefig(output_folder+name+"_theta_phi_hist.png")
         plt.clf()
+        plt.hist(x_label, bins=50, alpha=0.5, label="X")
+        plt.hist(y_label, bins=50, alpha=0.5, label="Y")
+        plt.legend(loc='upper right')
+        plt.savefig(output_folder+name+"_x_y_hist.png")
+        plt.clf()    
+
 
 def save_samples_from_ds(dataset, labels, output_folder, name="img", n_samples=10):
     if not os.path.exists(output_folder):

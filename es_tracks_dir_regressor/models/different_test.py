@@ -19,13 +19,13 @@ def build_model(n_outputs, optimizable_parameters, train, validation, output_fol
     model.add(tf.keras.layers.Conv2D(optimizable_parameters['n_filters'], (optimizable_parameters['kernel_size'], 1), activation='relu', input_shape=input_shape))
 
     for i in range(optimizable_parameters['n_conv_layers']):
-        model.add(layers.Conv2D(optimizable_parameters['n_filters']//(i+1), (optimizable_parameters['kernel_size'], 1), activation='relu'))
+        model.add(layers.Conv2D(optimizable_parameters['n_filters']//(i+1), (optimizable_parameters['kernel_size'], 1), ))
         model.add(layers.LeakyReLU(alpha=0.05))
         model.add(layers.MaxPooling2D((2, 2)))
     
     model.add(layers.Flatten())
     for i in range(optimizable_parameters['n_dense_layers']):
-        model.add(layers.Dense(optimizable_parameters['n_dense_units']//(i+1), activation='relu'))
+        model.add(layers.Dense(optimizable_parameters['n_dense_units']//(i+1)))
         model.add(layers.LeakyReLU(alpha=0.05))
     
     model.add(layers.Dense(n_outputs, activation='linear'))  
@@ -52,7 +52,7 @@ def build_model(n_outputs, optimizable_parameters, train, validation, output_fol
                         epochs=200, 
                         validation_data=validation, 
                         callbacks=callbacks,
-                        verbose=1)
+                        verbose=0)
 
     return model, history
 
@@ -203,8 +203,6 @@ def hypertest_model(optimizable_parameters, train, validation, n_outputs, output
         return {'loss': 9999, 'status': hp.STATUS_FAIL}
     else:
         print(is_comp)
-    with open(output_folder+"hyperopt_progression.txt", "a") as f:
-        f.write(str(optimizable_parameters)+"\n")
 
     model, history = build_model(n_outputs=n_outputs, 
                                 optimizable_parameters=optimizable_parameters, 
@@ -216,6 +214,7 @@ def hypertest_model(optimizable_parameters, train, validation, n_outputs, output
     loss, accuracy=model.evaluate(validation)
     print("loss: ", loss, " accuracy: ", accuracy)
     with open(output_folder+"hyperopt_progression.txt", "a") as f:
+        f.write(str(optimizable_parameters)+"\n")
         f.write("loss: "+str(loss)+"\n")
         f.write("accuracy: "+str(accuracy)+"\n")
         f.write("\n")

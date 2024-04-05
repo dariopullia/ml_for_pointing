@@ -30,6 +30,8 @@ def create_report(output_folder, model_name, input_json, model_function):
 def save_sample_img(ds_item, output_folder, img_name):
     if ds_item.shape[2] == 1:
         img = ds_item[:,:,0]
+        # where pixels are 0, set them to np.nan
+        img= np.where(img == 0, np.nan, img)
         plt.figure(figsize=(10, 26))
         plt.title(img_name)
         plt.imshow(img)
