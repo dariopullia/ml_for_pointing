@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
 import seaborn as sns
-import hyperopt as hp
+#import hyperopt as hp
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -49,7 +49,7 @@ def build_model(buid_parameters, train, validation, output_folder, input_shape):
     ]    
 
     history = model.fit(train, 
-                        epochs=200, 
+                        epochs=200,  
                         validation_data=validation, 
                         callbacks=callbacks,
                         verbose=1)

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
 import seaborn as sns
-import hyperopt as hp
+#import hyperopt as hp
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -12,7 +12,7 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.preprocessing import label_binarize
-import healpy as healpy
+#import healpy as healpy
 
 import general_purpose_libs as gpl
 

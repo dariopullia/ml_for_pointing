@@ -1,6 +1,6 @@
 {
-    "input_data": "/eos/user/d/dapullia/dune/npy_datasets/ds-mix-mt-vs-all/dataset_img.npy",
-    "input_label": "/eos/user/d/dapullia/dune/npy_datasets/ds-mix-mt-vs-all/dataset_label_process.npy",
+    "input_data": "/afs/cern.ch/work/h/hakins/private/npy_dataset/ds-mix-mt-vs-all/dataset_img.npy",
+    "input_label": "/afs/cern.ch/work/h/hakins/private/npy_dataset/ds-mix-mt-vs-all/dataset_label_process.npy",
     "output_folder": "/",
     "model_name": "simple_cnn",
     "load_model": false,
