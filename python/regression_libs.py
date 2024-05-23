@@ -47,8 +47,7 @@ def prepare_data(input_data, input_label, dataset_parameters, output_folder):
     print("dataset_img type: ", type(dataset_img))
     print("dataset_lab type: ", type(dataset_label))
 
-    print("SET Y TO 0")
-    dataset_label[:,1] = 0
+
     # Remove the direction
     if remove_y_direction:
         print("Removing the direction...")
@@ -115,9 +114,12 @@ def prepare_data(input_data, input_label, dataset_parameters, output_folder):
         print("Train images shape after: ", train_images.shape)
         print("Data augmented.")
 
-    train = tf.data.Dataset.from_tensor_slices((train_images, train_labels)).shuffle(10000).batch(32)
-    validation = tf.data.Dataset.from_tensor_slices((validation_images, validation_labels)).batch(32)
-    test = tf.data.Dataset.from_tensor_slices((test_images, test_labels)).batch(32)
+    # train = tf.data.Dataset.from_tensor_slices((train_images, train_labels)).shuffle(10000).batch(32)
+    # validation = tf.data.Dataset.from_tensor_slices((validation_images, validation_labels)).batch(32)
+    # test = tf.data.Dataset.from_tensor_slices((test_images, test_labels)).batch(32)
+    train = tf.data.Dataset.from_tensor_slices(((train_images[:, :, :, 0], train_images[:, :, :, 1], train_images[:, :, :, 2]), train_labels)).shuffle(10000).batch(32)
+    validation = tf.data.Dataset.from_tensor_slices(((validation_images[:, :, :, 0], validation_images[:, :, :, 1], validation_images[:, :, :, 2]), validation_labels)).batch(32)
+    test = tf.data.Dataset.from_tensor_slices(((test_images[:, :, :, 0], test_images[:, :, :, 1], test_images[:, :, :, 2]), test_labels)).batch(32)
 
     return train, validation, test
 
@@ -142,103 +144,174 @@ def log_metrics(test_labels, predictions, output_folder):
     save_labels_in_a_map(predictions, output_folder, name="map_predictions")
     plot_diff(test_labels, predictions, output_folder)
 
-def plot_diff(test_labels, predictions, output_folder):
-    # plot the difference between the true and predicted labels
-    if test_labels.shape[1] == 3:
-        angles_true = from_coordinate_to_theta_phi(test_labels)
-        angles_pred = from_coordinate_to_theta_phi(predictions)
-        thetas_true, phis_true = angles_true[:,0], angles_true[:,1]
-        thetas_pred, phis_pred = angles_pred[:,0], angles_pred[:,1]
-        plt.figure(figsize=(10, 10))
-        plt.title("Difference in Theta")
-        plt.hist(thetas_true-thetas_pred, bins=100, alpha=0.5, label="Theta")
-        plt.legend(loc='upper right')
-        plt.savefig(output_folder+"theta_diff_hist.png")
-        plt.clf()
-        plt.figure(figsize=(10, 10))
-        plt.title("Difference in Phi")
-        plt.hist(phis_true-phis_pred, bins=100, alpha=0.5, label="Phi")
-        plt.legend(loc='upper right')
-        plt.savefig(output_folder+"phi_diff_hist.png")
-        plt.clf()
-    elif test_labels.shape[1] == 2:
-        x_true, y_true = test_labels[:,0], test_labels[:,1]
-        x_pred, y_pred = predictions[:,0], predictions[:,1]
-        # normalize the labels
-        r = np.sqrt(x_true**2 + y_true**2)
-        x_true = x_true/r
-        y_true = y_true/r
-        r = np.sqrt(x_pred**2 + y_pred**2)
-        x_pred = x_pred/r
-        y_pred = y_pred/r
+def plot_diff(test_labels, predictions, output_folder, final_theta=None, final_phi=None, final_theta_std=None, final_phi_std=None):
+    pred_x, pred_y, pred_z = predictions[:, 0], predictions[:, 1], predictions[:, 2]
+    true_x, true_y, true_z = test_labels[:, 0], test_labels[:, 1], test_labels[:, 2]
 
-        theta_true = np.arctan2(y_true, x_true)
-        theta_pred = np.arctan2(y_pred, x_pred)
-        plt.figure(figsize=(10, 10))
-        plt.title("Difference in Theta")
-        plt.hist(theta_true-theta_pred, bins=100, alpha=0.5, label="Theta")
-        plt.legend(loc='upper right')
-        plt.savefig(output_folder+"theta_diff_hist.png")
-        plt.clf()      
+    # norm predictions
+    r = np.sqrt(pred_x**2 + pred_z**2 + pred_y**2)
+    pred_x = pred_x/r
+    pred_y = pred_y/r
+    pred_z = pred_z/r
+
+    true_angles = from_coordinate_to_theta_phi(test_labels)
+    true_theta, true_phi = true_angles[:, 0], true_angles[:, 1]
+    pred_angles = from_coordinate_to_theta_phi(predictions) 
+    pred_theta, pred_phi = pred_angles[:, 0], pred_angles[:, 1]
+   
+    plt.hist(pred_theta, bins=50, alpha=0.5, label="Predicted", range=(-np.pi, np.pi))
+    unique_true_theta = np.unique(true_theta)
+    if len(unique_true_theta) > 1:
+        plt.hist(true_theta, bins=50, alpha=0.5, label="True", range=(-np.pi, np.pi))
+    else:
+        plt.axvline(unique_true_theta[0], color='b', linestyle='solid', linewidth=2, label="True Theta")
+
+    if final_theta is not None:
+        # add a line with the final theta 
+        plt.axvline(final_theta, color='r', linestyle='dashed', linewidth=2, label="Final Theta")
+        upper_bound = (final_theta + final_theta_std + np.pi) % (2 * np.pi) - np.pi
+        lower_bound = (final_theta - final_theta_std + np.pi) % (2 * np.pi) - np.pi
+        plt.axvline(upper_bound, color='r', linestyle='dotted', linewidth=2, label="Final Theta + Std")
+        plt.axvline(lower_bound, color='r', linestyle='dotted', linewidth=2, label="Final Theta - Std")
+
+    plt.title("True and Predicted thetas")
+    plt.legend()
+    plt.xlabel("Theta [Rad]")
+    plt.legend(loc='upper right')
+    plt.savefig(output_folder+'thetas.png')
+    plt.clf()
+
+
+    plt.hist(pred_phi, bins=50, alpha=0.5, label="Predicted", range=(0, np.pi))
+    unique_true_phi = np.unique(true_phi)
+    if len(unique_true_phi) > 1:
+        plt.hist(true_phi, bins=50, alpha=0.5, label="True", range=(0, np.pi))
+    else:
+        plt.axvline(unique_true_phi[0], color='b', linestyle='solid', linewidth=2, label="True Phi")
+
+    if final_phi is not None:
+        # add a line with the final phi 
+        plt.axvline(final_phi, color='r', linestyle='dashed', linewidth=2, label="Final Phi")
+        plt.axvline(np.min([final_phi + final_phi_std, np.pi]), color='r', linestyle='dotted', linewidth=2, label="Final Phi + Std")
+        plt.axvline(np.max([final_phi - final_phi_std, 0]), color='r', linestyle='dotted', linewidth=2, label="Final Phi - Std")       
+
+    plt.title("True and Predicted phis")
+    plt.legend()
+    plt.xlabel("Phi [Rad]")
+    plt.legend(loc='upper right')
+    plt.savefig(output_folder+'phis.png')
+    plt.clf()
+
+    plt.hist(true_x, bins=50, alpha=0.5, label="True")
+    plt.hist(pred_x, bins=50, alpha=0.5, label="Predicted")
+    plt.title("X")
+    plt.legend(loc='upper right')
+    plt.savefig(output_folder+'x.png')
+    plt.clf()
+
+    plt.hist(true_y, bins=50, alpha=0.5, label="True")
+    plt.hist(pred_y, bins=50, alpha=0.5, label="Predicted")
+    plt.title("Y")
+    plt.legend(loc='upper right')
+    plt.savefig(output_folder+'y.png')
+    plt.clf()
+
+    plt.hist(true_z, bins=50, alpha=0.5, label="True")
+    plt.hist(pred_z, bins=50, alpha=0.5, label="Predicted")
+    plt.title("Z")
+    plt.legend(loc='upper right')
+    plt.savefig(output_folder+'z.png')
+    plt.clf()
+
+    # flat distribution
+    theta_flat = np.random.uniform(-np.pi, np.pi, len(true_x))
+    cosines_flat = np.cos(theta_flat)
+    cosines = (true_x * pred_x + true_z * pred_z) / (np.sqrt(true_x**2 + true_z**2) * np.sqrt(pred_x**2 + pred_z**2))
+
+    plt.hist(cosines, bins=50, alpha=1, label="Cos($\\theta_{true}-\\theta_{pred}$)")
+    plt.hist(cosines_flat, bins=50, alpha=0.2, label="Cos($\\theta_{true}-\\theta_{flat}$)", hatch='xx')
+    plt.xlabel("Cos($\\theta$)")
+    plt.title("Cosine between true and predicted direction")
+    plt.legend()
+    plt.savefig(output_folder+'cosine.png')
+    plt.clf()
+
+    # plot the difference
+    mins = np.minimum(true_theta, pred_theta)
+    maxs = np.maximum(true_theta, pred_theta)
+    true_diff = maxs - mins
+    true_diff = np.where(true_diff > np.pi, 2*np.pi - true_diff, true_diff)
+
+    mins_flat = np.minimum(true_theta, theta_flat)
+    maxs_flat = np.maximum(true_theta, theta_flat)
+    flat_diff = maxs_flat - mins_flat
+    flat_diff = np.where(flat_diff > np.pi, 2*np.pi - flat_diff, flat_diff)
+
+    plt.hist(true_diff, bins=50, alpha=1, label="$\\theta_{true}-\\theta_{pred}$")
+    plt.hist(flat_diff, bins=50, alpha=0.2, label="$\\theta_{true}-\\theta_{flat}$", hatch='xx')
+    plt.xlabel("Angle Difference [Rad]")
+    plt.title("Angle difference between true and predicted direction")
+    plt.legend()
+    plt.savefig(output_folder+'difference.png')
+    plt.clf()
+
+    plt.hist(true_theta-pred_theta, bins=50, alpha=0.5, label="True")
+    plt.hist(true_theta-theta_flat, bins=50, alpha=0.5, label="Flat")
+    plt.xlabel("True - Predicted")
+    plt.legend()
+    plt.savefig(output_folder+'difference_not_correct.png')
+    plt.clf()
+
+    # include also the y coordinate in the angle studies
+    flat_omega = np.random.uniform(0, np.pi, len(true_x))
+    complete_cos_omega = (true_x * pred_x + true_y * pred_y + true_z * pred_z) / (np.sqrt(true_x**2 + true_y**2 + true_z**2) * np.sqrt(pred_x**2 + pred_y**2 + pred_z**2))
+    complete_omega = np.arccos(complete_cos_omega)
+    plt.hist(complete_cos_omega, bins=50, alpha=1, label="Cos($\\omega$)")
+    plt.hist(np.cos(flat_omega), bins=50, alpha=0.2, label="Cos($\\omega_{flat}$)", hatch='xx')
+    plt.xlabel("Cos($\\omega$)")
+    plt.title("Cosine between true and predicted direction in the 3D space")
+    plt.legend()
+    plt.savefig(output_folder+'cosine_3D.png')
+    plt.clf()
+
+    plt.hist(complete_omega, bins=50, alpha=1, label="$\\omega$")
+    plt.hist(flat_omega, bins=50, alpha=0.2, label="$\\omega_{flat}$", hatch='xx')
+    plt.xlabel("$\\omega$")
+    plt.title("Angle between true and predicted direction in the 3D space")
+    plt.legend()
+    plt.savefig(output_folder+'angle_3D.png')
+    plt.clf()
+
+
+
+
 
 def save_labels_in_a_map(dataset_label, output_folder, name="map"):
-    if dataset_label.shape[1] == 3:
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
+    nside = 64
+    npix = healpy.nside2npix(nside)
+    # create a map with the number of pixels
+    map_hp = np.zeros(npix)
+    angles = from_coordinate_to_theta_phi(dataset_label)
+    thetas, phis = angles[:,0], angles[:,1]
 
-        # create an image with healpy, each label is a direction in x,y,z
-        nside = 32
-        npix = healpy.nside2npix(nside)
-        # create a map with the number of pixels
-        map = np.zeros(npix)
-        # create a map with the number of pixels
+    plt.figure(figsize=(10, 10))
+    plt.title("Labels map")
+    thetas = np.mod(thetas, 2*np.pi)
+    phis = np.mod(phis, np.pi)
+    # get the indices
+    indices = healpy.ang2pix(nside, phis, thetas)
+    # fill the map
+    for index in indices:
+        map_hp[index] += 1
 
-        angles = from_coordinate_to_theta_phi(dataset_label)
-        thetas, phis = angles[:,0], angles[:,1]
-
-        plt.figure(figsize=(10, 10))
-        plt.title("Labels map")
-        thetas = np.mod(thetas, np.pi)
-        phis = np.mod(phis, 2*np.pi)
-        # get the indices
-        indices = healpy.ang2pix(nside, thetas, phis)
-        # fill the map
-        for index in indices:
-            map[index] += 1
-        # plot the map
-        plt.figure(figsize=(10, 10))
-        plt.title("Labels map")
-        plt.hist(thetas, bins=100, alpha=0.5, label="Theta")
-        plt.hist(phis, bins=100, alpha=0.5, label="Phi")
-        plt.legend(loc='upper right')
-        plt.title("Theta and Phi")
-        plt.savefig(output_folder+name+"_theta_phi_hist.png")
-        plt.clf()
-
-        healpy.mollview(map, title=name, cmap="viridis")
-        plt.savefig(output_folder+name+".png")
-        plt.close()
-
-    elif dataset_label.shape[1] == 2:
-        plt.figure(figsize=(10, 10))
-        plt.title("Labels map")
-        x_label, y_label = dataset_label[:,0], dataset_label[:,1]
-        # normalize the labels
-        r = np.sqrt(x_label**2 + y_label**2)
-        x_label = x_label/r
-        y_label = y_label/r
-        theta_label = np.arctan2(y_label, x_label)
-        plt.hist(theta_label, bins=50, alpha=0.5, label="Theta")
-        plt.legend(loc='upper right')
-        plt.savefig(output_folder+name+"_theta_phi_hist.png")
-        plt.clf()
-        plt.hist(x_label, bins=50, alpha=0.5, label="X")
-        plt.hist(y_label, bins=50, alpha=0.5, label="Y")
-        plt.legend(loc='upper right')
-        plt.savefig(output_folder+name+"_x_y_hist.png")
-        plt.clf()    
-
+    map_hp = healpy.smoothing(map_hp, fwhm=0.1)
+    healpy.mollview(map_hp, title="Predictions", cmap="viridis")
+    healpy.graticule()
+    plt.savefig(output_folder+name+".png")
+    plt.close()
 
 def save_samples_from_ds(dataset, labels, output_folder, name="img", n_samples=10):
     if not os.path.exists(output_folder):
@@ -258,12 +331,11 @@ def save_samples_from_ds(dataset, labels, output_folder, name="img", n_samples=1
 def from_coordinate_to_theta_phi(coords):
     # nomalize the coordinates
     coords = coords/np.linalg.norm(coords, axis=1)[:, np.newaxis]
-    x, y, z = coords[:,0], coords[:,2], coords[:,1]
+    x, y, z = coords[:,0], coords[:,1], coords[:,2]
     r = np.sqrt(x**2 + y**2 + z**2)
-    # theta is in [0, pi]
-    theta = np.arccos(z/r)
-    # phi is in [-pi, pi]
-    phi = np.arctan2(y, x)
+
+    phi = np.arccos(y/r)
+    theta = np.arctan2(z, x)
 
     return np.array([theta, phi]).T
 

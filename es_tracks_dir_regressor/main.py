@@ -50,6 +50,10 @@ elif model_name == 'cvn_regression':
     import models.cvn_regression as selected_model
 elif model_name == 'different_test':
     import models.different_test as selected_model
+elif model_name == 'd3_views_simple_cnn':
+    import models.d3_views_simple_cnn as selected_model
+elif model_name == 'd3_views_hp_simple_cnn':
+    import models.d3_views_hp_simple_cnn as selected_model
 else:
     print('Model not found')
     sys.exit(1)

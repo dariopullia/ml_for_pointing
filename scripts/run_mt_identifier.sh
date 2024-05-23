@@ -1,9 +1,9 @@
 
 #!bin/bash
 # This script is used to run the pipeline
-# INPUT_JSON=/afs/cern.ch/work/d/dapullia/public/dune/machine_learning/json/regression/hp_classification.json
-# INPUT_JSON=/afs/cern.ch/work/d/dapullia/public/dune/machine_learning/json/mt_identification/basic-hp_identification.json
-INPUT_JSON=/afs/cern.ch/work/d/dapullia/public/dune/machine_learning/json/mt_identification/basic-simple_cnn.json
+
+INPUT_JSON=/afs/cern.ch/work/d/dapullia/public/dune/machine_learning/json/mt_identification/basic-hp_identification.json
+# INPUT_JSON=/afs/cern.ch/work/d/dapullia/public/dune/machine_learning/json/mt_identification/basic-simple_cnn.json
 OUTPUT_FOLDER=/eos/user/d/dapullia/dune/ML/mt_identifier/
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do

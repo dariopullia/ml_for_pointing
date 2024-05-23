@@ -2,8 +2,8 @@
 #!bin/bash
 # This script is used to run the pipeline
 # INPUT_JSON=/afs/cern.ch/work/d/dapullia/public/dune/machine_learning/json/regression/hp_classification.json
-INPUT_JSON=/afs/cern.ch/work/d/dapullia/public/dune/machine_learning/json/classification/basic-hp_classification.json
-OUTPUT_FOLDER=/eos/user/d/dapullia/dune/ML/interaction_classifier/es-vs-cc-volume-r50/
+INPUT_JSON=/afs/cern.ch/work/d/dapullia/public/dune/machine_learning/json/classification/hp_classification_only_mt.json
+OUTPUT_FOLDER=/eos/user/d/dapullia/dune/ML/interaction_classifier/ds-mix-es-cc-100000/main_track/
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
