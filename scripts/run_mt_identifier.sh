@@ -31,8 +31,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 output_file="/afs/cern.ch/work/h/hakins/private/ml_for_pointing/json/mt_identification/basic-hp_identification_${cut}.json"
+#output_file="/afs/cern.ch/work/h/hakins/private/ml_for_pointing/json/mt_identification/basic-simple_cnn_${cut}.json"
+
+
 cd /afs/cern.ch/work/h/hakins/private/online-pointing-utils/scripts/json_creators
 python hp_identification_json_creator.py --cut "$cut" --output_file "$output_file"
+#python basic_cnn_json_creator.py --cut "$cut" --output_file "$output_file"
+
 INPUT_JSON="$output_file"
 
 REPO_HOME=$(git rev-parse --show-toplevel)
@@ -40,4 +45,6 @@ export PYTHONPATH=$PYTHONPATH:$REPO_HOME/custom_python_libs/lib/python3.9/site-p
 
 cd /afs/cern.ch/work/h/hakins/private/ml_for_pointing/mt_identifier
 python main.py --input_json $INPUT_JSON --output_folder $OUTPUT_FOLDER
+#python main.py --input_json /afs/cern.ch/work/h/hakins/private/ml_for_pointing/json/mt_identification/basic-simple_cnn.json --output_folder $OUTPUT_FOLDER
+
 cd ../scripts
