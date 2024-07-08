@@ -1,9 +1,36 @@
 import re
 import numpy as npy
 import matplotlib.pyplot as plt
-
+import re
+import numpy as npy
+import matplotlib.pyplot as plt
+import numpy as np
+#import ROOT
+from scipy.stats import linregress
+from scipy.optimize import curve_fit
+import time
+import os
+import argparse
+import warnings
+import gc
+from sklearn.metrics import r2_score
+from scipy.special import gamma
+from scipy.stats import chisquare
+import random
+import pickle
+import os
+from tensorflow.keras.models import load_model
+import pandas as pd
+import run_mt_id
+import sys
+sys.path.append('../python/') 
+sys.path.append("/afs/cern.ch/work/h/hakins/private/online-pointing-utils/python")
+from cluster import read_root_file_to_clusters
+clusters, n_events = read_root_file_to_clusters('/afs/cern.ch/work/h/hakins/private/root_cluster_files/benchmark/X/clusters_tick_limits_3_channel_limits_1_min_tps_to_cluster_1_cut_0.root') 
+is_benchmark = True
 cuts = [50000, 60000, 70000, 80000, 100000, 120000, 140000, 150000, 160000, 180000, 225000, 250000, 275000, 300000, 325000, 
         350000, 400000, 500000, 600000, 700000]
+
 plot_cuts = []
 true_pos=[]
 true_neg = []
@@ -14,8 +41,12 @@ f1s = []
 cut_counts = 0
 for cut in cuts:
     try:
-        with open(f"/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/{cut}/hyperopt_simple_cnn/aug_coeff_1/metrics.txt",'r') as file:
-            lines = file.readlines()
+        if not is_benchmark:
+            with open(f"/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/{cut}/hyperopt_simple_cnn/aug_coeff_1/metrics.txt",'r') as file:
+                lines = file.readlines()
+        elif is_benchmark:
+            with open(f"/eos/user/h/hakins/dune/ML/mt_identifier/benchmark/{cut}mt_id/metrics.txt",'r') as file:
+                lines = file.readlines()
         
     
         matrix_lines = []
@@ -62,7 +93,11 @@ plt.ylabel('Fraction')
 plt.legend()
 
 # Displaying the plot
-plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/models_confusion_pos.png')
+if is_benchmark:
+    plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/models_confusion_pos.png')
+else:
+    plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/models_confusion_pos.png')
+
 plt.clf()
 
 #Just false
@@ -73,7 +108,10 @@ plt.plot(plot_cuts, false_neg, marker='o', linestyle='-', color='m', label='Fals
 plt.xlabel('Cuts')
 plt.ylabel('Fraction')
 plt.legend()
-plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/models_confusion_neg.png')
+if is_benchmark:
+    plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/models_confusion_neg.png')
+else:
+    plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/models_confusion_neg.png')
 plt.clf()
 
 #true and false
@@ -85,7 +123,11 @@ plt.plot(plot_cuts, false_neg, marker='o', linestyle='-', color='m', label='Fals
 plt.xlabel('Cuts')
 plt.ylabel('Fraction')
 plt.legend()
-plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/models_confusion.png')
+if is_benchmark:
+    plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/models_confusion.png')
+else:
+    plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/models_confusion.png')
+
 
 
 plt.clf()
@@ -94,4 +136,8 @@ plt.plot(plot_cuts, f1s, marker='o', linestyle='-', color='m', label='F1 Score')
 plt.xlabel('Cuts')
 plt.ylabel('Fraction')
 plt.legend()
-plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/F1_scores.png')
+if is_benchmark:
+    plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/F1_scores.png')
+else:
+    plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/F1_scores.png')
+    
