@@ -460,11 +460,9 @@ plt.clf()
     plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition.png')'''
 #makes one large subplot
 
-fig, axs = plt.subplots(int(len(cuts)/2), 1, figsize=(10, 6 * int(len(cuts)/2)), sharex=True)
+fig, axs = plt.subplots(int(3), 1, figsize=(10, 6 * int(3), sharex=True))
 
-for i in range(int(len(cuts)/2)):
-    if i>2:
-        break
+for i in range(3):
     x = np.arange(len(cuts))
     bar_width = 0.5
 
@@ -493,7 +491,8 @@ plt.tight_layout()
 plt.subplots_adjust(top=0.95)  # Adjust top spacing for the overall title
 plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition_stacked_1sthalf.png')
 
-fig, axs = plt.subplots(int(len(cuts)/2), 1, figsize=(10, 6 * int(len(cuts)/2)), sharex=True)
+
+'''fig, axs = plt.subplots(int(len(cuts)/2), 1, figsize=(10, 6 * int(len(cuts)/2)), sharex=True)
 
 for i in range(int(len(cuts)/2), len(cuts)):
     if i>2:
@@ -525,6 +524,12 @@ fig.suptitle('Stacked Plots of Composition of Sample After MT Identifier')
 plt.tight_layout()
 plt.subplots_adjust(top=0.95)  # Adjust top spacing for the overall title
 plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition_stacked_2ndhalf.png')
+'''
+
+
+
+
+
 
 '''# Isolating ES and CC events
 fig, ax = plt.subplots(figsize=(10, 6))  # Adjust figsize for better readability
