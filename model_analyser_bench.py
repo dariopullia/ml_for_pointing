@@ -31,10 +31,11 @@ sys.path.append('../python/')
 sys.path.append("/afs/cern.ch/work/h/hakins/private/online-pointing-utils/python")
 
 is_benchmark = True
-cuts = [50000, 60000, 70000]
-        #, 80000, 100000, 120000, 140000, 150000, 160000]
-        # , 180000, 225000, 250000, 275000, 300000, 325000, 
-        #350000, 400000, 500000]
+cuts = [
+    #50000, 60000, 
+        70000,80000, 100000, 120000, 140000, 150000, 160000
+         , 180000, 225000, 250000, 275000, 300000, 325000, 
+        350000, 400000, 500000]
 
 plot_cuts = []
 true_pos=[]
@@ -263,9 +264,14 @@ for model_cut in cuts:
     bkg_id_as_mt = []
     
     for bench_cut in cuts:
-        print("Rinning through bench cuts")
-        labels = np.load(f"/eos/user/h/hakins/dune/ML/mt_identifier/benchmark/model_{model_cut}_on_cut_{bench_cut}ctds/dataset/dataset_label_process.npy")
-        predictions = np.load(f"/eos/user/h/hakins/dune/ML/mt_identifier/benchmark/model_{model_cut}_on_cut_{bench_cut}mt_id/predictions.npy")
+        if os.path.exists(f"/eos/user/h/hakins/dune/ML/mt_identifier/benchmark/model_{model_cut}_on_cut_{bench_cut}ctds/dataset/dataset_label_process.npy"):
+            labels = np.load(f"/eos/user/h/hakins/dune/ML/mt_identifier/benchmark/model_{model_cut}_on_cut_{bench_cut}ctds/dataset/dataset_label_process.npy")
+            predictions = np.load(f"/eos/user/h/hakins/dune/ML/mt_identifier/benchmark/model_{model_cut}_on_cut_{bench_cut}mt_id/predictions.npy")
+            #print("File loaded successfully.")
+        else:
+            print(f"-cut_model {model_cut} -cut_bench {bench_cut}")
+        #labels = np.load(f"/eos/user/h/hakins/dune/ML/mt_identifier/benchmark/model_{model_cut}_on_cut_{bench_cut}ctds/dataset/dataset_label_process.npy")
+        #predictions = np.load(f"/eos/user/h/hakins/dune/ML/mt_identifier/benchmark/model_{model_cut}_on_cut_{bench_cut}mt_id/predictions.npy")
         #hyperparamters
         '''params = np.load(f"/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/{cut}/hyperopt_simple_cnn/aug_coeff_1/hyperopt_simple_cnn_best.npy", allow_pickle=True)
         params_dict = params.item()
@@ -318,7 +324,6 @@ for model_cut in cuts:
                 mt+=1
                 
         
-        print('Adding to lists')
         true_negatives.append(tn)
         false_negatives.append(fn)
         identified_ccs.append(cc)
@@ -378,10 +383,7 @@ norm_tp_list=[]
 norm_tn_list=[]
 norm_fp_list=[]
 norm_fn_list=[]
-print(true_positives_nested)
 for i in range(len(cuts)):
-    print(i)
-    print(true_positives_nested[i])
     norm_true_positives = true_positives_nested[i] / cluster_sizes_mt[0]
     norm_true_negatives = true_negatives_nested[i] /  (blips[0]+bkgs[0])
     norm_false_positives = false_positives_nested[i] / (blips[0]+bkgs[0])
@@ -391,7 +393,7 @@ for i in range(len(cuts)):
     recall = (norm_true_positives)/(norm_true_positives+norm_false_negatives)
     precicion = norm_true_positives/(norm_true_positives+norm_false_positives)
     f1_Score = 2 * (precicion*recall)/(precicion + recall)
-    plt.plot(cuts,f1_Score, marker='o', linestyle='-', color=colors[i], label=f'F1 Score Model {cuts[i]}')
+    plt.plot(cuts,f1_Score, marker='o', linestyle='-', label=f'F1 Score Model {cuts[i]}')
 
     norm_tp_list.append(norm_true_positives)
     norm_tn_list.append(norm_true_negatives)
@@ -402,26 +404,143 @@ plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/ben
 plt.clf()
 
 #F1 Score
-plt.title("Confusion Matrix Values across Different Cuts Using Model Trained on 50,000 ADC cut")
+plt.title("Confusion Matrix Values across Different Cuts")
 #Confusion MAtrix
 for i in range(len(cuts)):
-    plt.plot(cuts,norm_tp_list[i], marker='o', linestyle='-', color=colors[i], label=f'True Positive model {cut} ')
-    
-    #plt.plot(cuts,norm_tn_list[0], marker='o', linestyle='-', color=colors[1], label='True Negative')
-    #plt.plot(cuts,norm_fp_list[0], marker='o', linestyle='-', color=colors[2], label='False Positive')
-    #plt.plot(cuts,norm_fn_list[0], marker='o', linestyle='-', color=colors[3], label='False Negative')
+    plt.plot(cuts,norm_tp_list[i], marker='o', linestyle='-', color=colors[0],alpha=1/(i+1), label=f'True Positive model {cuts[i]} ')
+    plt.plot(cuts,norm_tn_list[i], marker='o', linestyle='-', color=colors[1],alpha=1/(i+1), label='True Negative')
+    plt.plot(cuts,norm_fp_list[i], marker='o', linestyle='-', color=colors[2],alpha=1/(i+1), label='False Positive')
+    plt.plot(cuts,norm_fn_list[i], marker='o', linestyle='-', color=colors[3],alpha=1/(i+1), label='False Negative')
 
 #plt.plot(cuts, norm_true_negatives, marker='o', linestyle='-', color='lightblue', label='True Negative')
 #plt.plot(cuts, norm_false_positives, marker='o', linestyle='-', color='lightcoral', label='False Positive')
 #plt.plot(cuts, norm_false_negatives, marker='o', linestyle='-', color='m', label='False Negative')
 plt.xlabel('Cuts')
 plt.ylabel('Fraction')
-plt.legend()
+#plt.legend()
 plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/models_confusion_absolute_crossed.png')
 plt.clf()
 
+#True Positives / True Pos + False Neg
+cmap = plt.get_cmap("tab20")  # Use a colormap with 20 distinct colors
+
+newfig = plt.figure(figsize=(12, 8))  # Increase figure size for better readability
+for i in range(len(cuts)):
+    plt.plot(cuts, true_positives_nested[i]/(false_negatives_nested[i]+true_positives_nested[i]), 
+             label=f"Model {cuts[i]}", color=cmap(i % 20))  # Ensure colors are distinct and cycle if necessary
+
+plt.xlabel("Cuts")
+plt.ylabel("TP / (TP + FN)")
+plt.title("TP / (TP + FN) for Different Models at Different Cuts")
+plt.legend(loc='best', bbox_to_anchor=(1.05, 1), borderaxespad=0.)  # Position legend outside the plot
+plt.tight_layout()  # Adjust layout to prevent clipping of ylabel and title
+plt.ylim(0,1)
+plt.savefig("/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/TP_over_FN_plus_TP.png")
+plt.clf()
+#True Positives / True Pos + False Neg
+cmap = plt.get_cmap("tab20")  # Use a colormap with 20 distinct colors
+
+newfig = plt.figure(figsize=(12, 8))  # Increase figure size for better readability
+for i in range(len(cuts)):
+    plt.plot(cuts, false_positives_nested[i]/(identified_es_nested[i]+false_positives_nested[i]), 
+             label=f"Model {cuts[i]}", color=cmap(i % 20))  # Ensure colors are distinct and cycle if necessary
+
+plt.xlabel("Cuts")
+plt.ylabel("FP / (FP + TP(ES))")
+plt.title("FP / (FP + TP(ES)) for Different Models at Different Cuts")
+plt.legend(loc='best', bbox_to_anchor=(1.05, 1), borderaxespad=0.)  # Position legend outside the plot
+plt.tight_layout()  # Adjust layout to prevent clipping of ylabel and title
+plt.ylim(0,1)
+plt.savefig("/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/FP_over_FP_plus_TP.png")
+plt.clf()
+
+#TPs / All
+cmap = plt.get_cmap("tab20")  # Use a colormap with 20 distinct colors
+
+newfig = plt.figure(figsize=(12, 8))  # Increase figure size for better readability
+for i in range(len(cuts)):
+    plt.plot(cuts, true_positives_nested[i]/(true_positives_nested[i]+false_positives_nested[i] + true_negatives_nested[i] + false_negatives_nested[i]), 
+             label=f"Model {cuts[i]}", color=cmap(i % 20))  # Ensure colors are distinct and cycle if necessary
+
+plt.xlabel("Cuts")
+plt.ylabel("TP / All Clusters")
+plt.title("TP / All Clusters for Different Models at Different Cuts")
+plt.legend(loc='best', bbox_to_anchor=(1.05, 1), borderaxespad=0.)  # Position legend outside the plot
+plt.tight_layout()  # Adjust layout to prevent clipping of ylabel and title
+plt.ylim(0,1)
+plt.savefig("/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/TP_over_all.png")
+plt.clf()
+#TPs
+cmap = plt.get_cmap("tab20")  # Use a colormap with 20 distinct colors
+
+newfig = plt.figure(figsize=(12, 8))  # Increase figure size for better readability
+for i in range(len(cuts)):
+    plt.plot(cuts, true_positives_nested[i], label=f"Model {cuts[i]}", color=cmap(i % 20))  # Ensure colors are distinct and cycle if necessary
+
+plt.xlabel("Cuts")
+plt.ylabel("TPs")
+plt.title("Number of True Positives vs Cuts")
+plt.legend(loc='best', bbox_to_anchor=(1.05, 1), borderaxespad=0.)  # Position legend outside the plot
+plt.tight_layout()  # Adjust layout to prevent clipping of ylabel and title
+plt.savefig("/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/TPs.png")
+plt.clf()
 
 
+#TP / TP + FP
+cmap = plt.get_cmap("tab20")  # Use a colormap with 20 distinct colors
+
+newfig = plt.figure(figsize=(12, 8))  # Increase figure size for better readability
+for i in range(len(cuts)):
+    plt.plot(cuts, true_positives_nested[i]/(true_positives_nested[i]+false_positives_nested[i]), label=f"Model {cuts[i]}", color=cmap(i % 20))  # Ensure colors are distinct and cycle if necessary
+
+plt.xlabel("Cuts")
+plt.ylabel("TP / (TP + FP)")
+plt.title("True Positive / (True Positive + False Positive) vs Cuts")
+plt.legend(loc='best', bbox_to_anchor=(1.05, 1), borderaxespad=0.)  # Position legend outside the plot
+plt.tight_layout()  # Adjust layout to prevent clipping of ylabel and title
+plt.savefig("/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/TP_TP_plus_FP.png")
+plt.clf()
+
+#Top Picks. The same model will be same color, with different metrics different line styles
+# Create a plot
+fig, ax1 = plt.subplots(figsize=(12, 6))
+
+# Plot with primary y-axis
+
+for i in range(len(cuts)):
+    if i == 0 or i == 5 or i == 15:
+        ax1.plot(cuts, true_positives_nested[i] / (true_positives_nested[i] + false_positives_nested[i]), label=f"Model {cuts[i]} TP / TP + FP", color=cmap(i%20))
+        #ax1.plot(cuts, true_positives_nested[i] / (true_positives_nested[i] + false_positives_nested[i] + true_negatives_nested[i] + false_negatives_nested[i]), linestyle='--', label=f"Model {cuts[i]} TP / All", color=cmap(i%20))
+        ax1.plot(cuts, true_positives_nested[i] / (false_negatives_nested[i] + true_positives_nested[i]), linestyle='-.', label=f"Model {cuts[i]} TP / FN + TP", color=cmap(i%20))
+
+# Create secondary y-axis
+ax2 = ax1.twinx()
+for i in range(len(cuts)):
+    if i == 0 or i == 5 or i == 15:
+        ax2.plot(cuts, true_positives_nested[i], label=f"Model {cuts[i]} TPs", color=cmap(i%20), linestyle=':')
+
+# Set labels
+ax1.set_xlabel('Cuts [MeV]')
+ax1.set_ylabel('Proportions')
+ax2.set_ylabel('True Positives')
+
+# Add legends
+lines_1, labels_1 = ax1.get_legend_handles_labels()
+lines_2, labels_2 = ax2.get_legend_handles_labels()
+ax1.legend(lines_1 + lines_2, labels_1 + labels_2,loc='center right')
+
+ticks = [70000,100000,150000,200000,250000,300000,350000,400000,450000,500000]
+ticks_mev = []
+for tick in ticks:
+    ticks_mev.append(tick*(1.58*np.power(10.0,-5)) - .04)
+
+# Title and layout
+plt.xticks([70000,100000,150000,200000,250000,300000,350000,400000,450000,500000], ticks_mev)
+#PLACE TICKSMEV HERE
+plt.title('Performance Metrics with Different Y Scales')
+plt.tight_layout()
+plt.savefig("/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/best_models_metrics.png")
+plt.clf()
 
 '''#identified ES events and BKG contamination
 plt.title("MT Sample Composition")
@@ -460,9 +579,9 @@ plt.clf()
     plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition.png')'''
 #makes one large subplot
 
-fig, axs = plt.subplots(int(3), 1, figsize=(10, 6 * int(3), sharex=True))
+fig, axs = plt.subplots(5, 1, figsize=(10, 3 * len(cuts)/2),sharex=True)
 
-for i in range(3):
+for i in range(int(5)):
     x = np.arange(len(cuts))
     bar_width = 0.5
 
@@ -483,53 +602,82 @@ for i in range(3):
     axs[i].set_title(f'Composition of Sample After MT Identifier at {cuts[i]}')
     axs[i].set_xticks(x)
     axs[i].set_xticklabels(cuts, rotation=45, ha='right')  # Rotate x labels
-    axs[i].legend()
     
-
+plt.legend()
 fig.suptitle('Stacked Plots of Composition of Sample After MT Identifier')
 plt.tight_layout()
 plt.subplots_adjust(top=0.95)  # Adjust top spacing for the overall title
-plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition_stacked_1sthalf.png')
+plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition_stacked_1stthird.png')
 
 
-'''fig, axs = plt.subplots(int(len(cuts)/2), 1, figsize=(10, 6 * int(len(cuts)/2)), sharex=True)
+fig, axs = plt.subplots(5, 1, figsize=(10, 3 * int(len(cuts)/2)), sharex=True)
 
-for i in range(int(len(cuts)/2), len(cuts)):
-    if i>2:
-        break
+for i in range(5, 10):
     x = np.arange(len(cuts))
     bar_width = 0.5
 
-    bars2 = axs[i].bar(x, identified_es_nested[i], bar_width, label='ES Identified as MT', color='lightgreen', edgecolor='lightgreen', alpha=0.7)
-    bars2_hatch = axs[i].bar(x, np.subtract(totals_es_nested[i], identified_es_nested[i]), bar_width, bottom=identified_es_nested[i], label="ES Identified as BKG", color='none', edgecolor='lightgreen', hatch='////', alpha=0.7, zorder=10)
+    bars2 = axs[i-5].bar(x, identified_es_nested[i], bar_width, label='ES Identified as MT', color='lightgreen', edgecolor='lightgreen', alpha=0.7)
+    bars2_hatch = axs[i-5].bar(x, np.subtract(totals_es_nested[i], identified_es_nested[i]), bar_width, bottom=identified_es_nested[i], label="ES Identified as BKG", color='none', edgecolor='lightgreen', hatch='////', alpha=0.7, zorder=10)
 
-    bars1 = axs[i].bar(x, identified_ccs_nested[i], bar_width, bottom=totals_es_nested[i], label='CC Identified as MT', color='blue', edgecolor='blue', alpha=0.45)
-    bars1_hatch = axs[i].bar(x, np.subtract(total_ccs_nested[i], identified_ccs_nested[i]), bar_width, bottom=np.add(identified_ccs_nested[i], totals_es_nested[i]), label='CC Identified as BKG', color='none', edgecolor='blue', hatch='////', alpha=0.45, zorder=10)
+    bars1 = axs[i-5].bar(x, identified_ccs_nested[i], bar_width, bottom=totals_es_nested[i], label='CC Identified as MT', color='blue', edgecolor='blue', alpha=0.45)
+    bars1_hatch = axs[i-5].bar(x, np.subtract(total_ccs_nested[i], identified_ccs_nested[i]), bar_width, bottom=np.add(identified_ccs_nested[i], totals_es_nested[i]), label='CC Identified as BKG', color='none', edgecolor='blue', hatch='////', alpha=0.45, zorder=10)
 
-    bars3 = axs[i].bar(x, blip_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt, label='Blip Identified as MT', color='lightcoral', edgecolor='lightcoral', alpha=0.7)
-    bars3_hatch = axs[i].bar(x, blips - blip_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt+blip_id_as_mt_nested[i], label='Blip Identified as Blip', color='none', edgecolor='lightcoral', hatch='////', alpha=0.45, zorder=10)
+    bars3 = axs[i-5].bar(x, blip_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt, label='Blip Identified as MT', color='lightcoral', edgecolor='lightcoral', alpha=0.7)
+    bars3_hatch = axs[i-5].bar(x, blips - blip_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt+blip_id_as_mt_nested[i], label='Blip Identified as Blip', color='none', edgecolor='lightcoral', hatch='////', alpha=0.45, zorder=10)
 
-    bars4 = axs[i].bar(x, bkg_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt+blips, label='Bkg Identified as MT', color='orange', edgecolor='orange', alpha=0.4)
-    bars4_hatch = axs[i].bar(x, bkgs - bkg_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt+blips+bkg_id_as_mt_nested[i], label='Bkg Identified as Bkg', color='none', edgecolor='orange', hatch='////', alpha=0.4, zorder=10)
+    bars4 = axs[i-5].bar(x, bkg_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt+blips, label='Bkg Identified as MT', color='orange', edgecolor='orange', alpha=0.4)
+    bars4_hatch = axs[i-5].bar(x, bkgs - bkg_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt+blips+bkg_id_as_mt_nested[i], label='Bkg Identified as Bkg', color='none', edgecolor='orange', hatch='////', alpha=0.4, zorder=10)
 
-    axs[i].set_ylabel('Counts')
-    axs[i].set_ylim(0,200)
-    axs[i].set_title(f'Composition of Sample After MT Identifier at {cuts[i]}')
-    axs[i].set_xticks(x)
-    axs[i].set_xticklabels(cuts, rotation=45, ha='right')  # Rotate x labels
-    axs[i].legend()
+    axs[i-5].set_ylabel('Counts')
+    axs[i-5].set_ylim(0,200)
+    axs[i-5].set_title(f'Composition of Sample After MT Identifier using Model {cuts[i]}')
+    axs[i-5].set_xticks(x)
+    axs[i-5].set_xticklabels(cuts, rotation=45, ha='right')  # Rotate x labels
     
 
 fig.suptitle('Stacked Plots of Composition of Sample After MT Identifier')
+plt.legend()
 plt.tight_layout()
+
 plt.subplots_adjust(top=0.95)  # Adjust top spacing for the overall title
-plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition_stacked_2ndhalf.png')
-'''
+plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition_stacked_2ndthird.png')
+fig, axs = plt.subplots(6, 1, figsize=(10, 3 * int(len(cuts)/2)), sharex=True)
+
+for i in range(10, 16):
+    x = np.arange(len(cuts))
+    bar_width = 0.5
+
+    bars2 = axs[i-10].bar(x, identified_es_nested[i], bar_width, label='ES Identified as MT', color='lightgreen', edgecolor='lightgreen', alpha=0.7)
+    bars2_hatch = axs[i-10].bar(x, np.subtract(totals_es_nested[i], identified_es_nested[i]), bar_width, bottom=identified_es_nested[i], label="ES Identified as BKG", color='none', edgecolor='lightgreen', hatch='////', alpha=0.7, zorder=10)
+
+    bars1 = axs[i-10].bar(x, identified_ccs_nested[i], bar_width, bottom=totals_es_nested[i], label='CC Identified as MT', color='blue', edgecolor='blue', alpha=0.45)
+    bars1_hatch = axs[i-10].bar(x, np.subtract(total_ccs_nested[i], identified_ccs_nested[i]), bar_width, bottom=np.add(identified_ccs_nested[i], totals_es_nested[i]), label='CC Identified as BKG', color='none', edgecolor='blue', hatch='////', alpha=0.45, zorder=10)
+
+    bars3 = axs[i-10].bar(x, blip_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt, label='Blip Identified as MT', color='lightcoral', edgecolor='lightcoral', alpha=0.7)
+    bars3_hatch = axs[i-10].bar(x, blips - blip_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt+blip_id_as_mt_nested[i], label='Blip Identified as Blip', color='none', edgecolor='lightcoral', hatch='////', alpha=0.45, zorder=10)
+
+    bars4 = axs[i-10].bar(x, bkg_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt+blips, label='Bkg Identified as MT', color='orange', edgecolor='orange', alpha=0.4)
+    bars4_hatch = axs[i-10].bar(x, bkgs - bkg_id_as_mt_nested[i], bar_width, bottom=cluster_sizes_mt+blips+bkg_id_as_mt_nested[i], label='Bkg Identified as Bkg', color='none', edgecolor='orange', hatch='////', alpha=0.4, zorder=10)
+
+    axs[i-10].set_ylabel('Counts')
+    axs[i-10].set_ylim(0,200)
+    axs[i-10].set_title(f'Composition of Sample After MT Identifier using Model {cuts[i]}')
+    axs[i-10].set_xticks(x)
+    axs[i-10].set_xticklabels(cuts, rotation=45, ha='right')  # Rotate x labels
+    
+
+fig.suptitle('Stacked Plots of Composition of Sample After MT Identifier')
+plt.legend()
+plt.tight_layout()
+
+plt.subplots_adjust(top=0.95)  # Adjust top spacing for the overall title
+plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition_stacked_3rdthird.png')
+plt.clf()
+
+#Key Plots
 
 
-
-
-
+    
 
 '''# Isolating ES and CC events
 fig, ax = plt.subplots(figsize=(10, 6))  # Adjust figsize for better readability
