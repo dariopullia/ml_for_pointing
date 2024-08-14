@@ -151,34 +151,6 @@ plt.clf()
     
     
 #Analyse data and models
-
-
-'''cuts_dict_bkg = {cut: [] for cut in cuts}#list of adc charge per cluster for all cuts
-cuts_dict_mt = {cut: [] for cut in cuts}
-cuts_dict_blips = {cut: [] for cut in cuts}
-true_labels = []
-mt_total = 0
-bkg_total = 0
-
-for cluster in clusters:
-    true_labels.append(cluster.true_label_)
-    if cluster.true_label_ == 100 or cluster.true_label_ == 101:
-        mt_total+=1
-        total_charge_sum_mt = 0
-        for tp in cluster.tps_:
-            total_charge_sum_mt += tp['adc_integral']
-        for cut in cuts:
-            if total_charge_sum_mt > cut:
-                cuts_dict_mt[cut].append(total_charge_sum_mt)
-    else:
-        bkg_total+=1
-        total_charge_sum_bkg = 0
-        for tp in cluster.tps_:
-            total_charge_sum_bkg += tp['adc_integral']
-        for cut in cuts:
-            if total_charge_sum_bkg > cut:
-                cuts_dict_bkg[cut].append(total_charge_sum_bkg)'''
-    
                 
 
 #101 es
@@ -188,22 +160,7 @@ cluster_sizes_bkg = []
 cluster_sizes_mt = []
 cluster_fraction = []
 
-'''print(f'mt total: {mt_total}')
-total_clusters_bkg = bkg_total
-print(total_clusters_bkg)
-
-# Loop through cuts_dict_bkg
-for cut_bkg in cuts_dict_bkg:
-    cluster_sizes_bkg.append(len(cuts_dict_bkg[cut_bkg]))
-    cluster_fraction.append(len(cuts_dict_bkg[cut_bkg]) / total_clusters_bkg)
-    print(f"Cut: {cut_bkg} Size: {len(cuts_dict_bkg[cut_bkg])}")
-    print(f'Fraction of Total: {len(cuts_dict_bkg[cut_bkg]) / bkg_total}')
-
-# Loop through cuts_dict_mt
-for cut_mt in cuts_dict_mt:
-    cluster_sizes_mt.append(len(cuts_dict_mt[cut_mt]))
-    print(f"Cut: {cut_mt} Size: {len(cuts_dict_mt[cut_mt])}")'''
-    
+   
 
 threshold = .7
 
@@ -542,43 +499,9 @@ plt.tight_layout()
 plt.savefig("/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/best_models_metrics.png")
 plt.clf()
 
-'''#identified ES events and BKG contamination
-plt.title("MT Sample Composition")
-plt.plot(cuts,identified_es, marker='o', linestyle='-', color='lightgreen', label='ES True Positive')
-plt.plot(cuts,totals_es, marker = 'o',linestyle='--', color='lightgreen', label='Total ES')
-plt.plot(cuts, norm_true_negatives, marker='o', linestyle='-', color='g', label='True Negative')
-plt.plot(cuts, norm_false_positives, marker='o', linestyle='-', color='r', label='False Positive')
-plt.plot(cuts, norm_false_negatives, marker='o', linestyle='-', color='m', label='False Negative')
-plt.xlabel('Cuts')
-plt.ylabel('Fraction')
-plt.legend()
-plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/models_confusion_absolute_ES.png')
-plt.clf()
-'''
 
-
-# Convert cuts to strings for labeling
-#Makes many plots
-'''for i in range(len(cuts)):
-    cut_labels = [str(cut) for cut in cuts]
-    x = np.arange(len(cuts))
-    bar_width = 0.5
-    fig, ax = plt.subplots(figsize=(10, 6))  
-    bars2 = ax.bar(x, identified_es_nested[i], bar_width,label='ES Identified as MT', color='lightgreen', edgecolor='lightgreen', alpha=0.7)
-    bars2_hatch = ax.bar(x, totals_es_nested[i]-identified_es_nested[i],bar_width,bottom=identified_es,label="ES Identified as BKG", color='none', edgecolor='lightgreen',hatch='////',alpha=0.7,zorder=10)
-    bars1 = ax.bar(x, identified_ccs_nested[i], bar_width,bottom=totals_es, label='CC Identified as MT', color='blue',edgecolor='blue', alpha=0.45)
-    bars1_hatch = ax.bar(x, total_ccs_nested[i]-identified_ccs_nested[i], bar_width,bottom=(identified_ccs+totals_es), label='CC Idenfitiied as BKG', color='none', edgecolor='blue',hatch='////', alpha=0.45,zorder=10)
-    bars3 = ax.bar(x, false_positives_nested[i], bar_width, bottom=cluster_sizes_mt, label='BKG+Blip Identified as MT', color='lightcoral',edgecolor='lightcoral', alpha=0.7)
-    ax.set_xlabel('Cuts')
-    ax.set_ylabel('Counts')
-    ax.set_title('Composition of Sample After MT Identifier at Each Cut')
-    ax.set_xticks(x)
-    ax.set_xticklabels(cut_labels, rotation=45, ha='right')  # Rotate x labels
-    ax.legend()
-    plt.tight_layout()
-    plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_sample_composition.png')'''
 #makes one large subplot
-
+#Split into 3 different plots because theres too many
 fig, axs = plt.subplots(5, 1, figsize=(10, 3 * len(cuts)/2),sharex=True)
 
 for i in range(int(5)):
@@ -679,59 +602,14 @@ plt.clf()
 
     
 
-'''# Isolating ES and CC events
-fig, ax = plt.subplots(figsize=(10, 6))  # Adjust figsize for better readability
-bars1 = ax.bar(x-bar_width/2, identified_ccs, bar_width, label='Identified CC MTs', color='blue',edgecolor='blue', alpha=0.8)
-bars1_hatch = ax.bar(x-bar_width/2, total_ccs-identified_ccs, bar_width,bottom=(identified_ccs), label='CC Idenfitiied as BKG', color='none', edgecolor='blue',hatch='////', alpha=0.8,zorder=10)
-bars2 = ax.bar(x+bar_width/2, identified_es, bar_width, label='Identified ES MTs', color='lightgreen',edgecolor='green',alpha=0.6)
-bars2_hatch = ax.bar(x+bar_width/2, totals_es-identified_es,bar_width,bottom=identified_es,label="ES Identified as BKG", color='none', edgecolor='green',hatch='////',alpha=0.6,zorder=10)
 
 
-ax.set_xlabel('Cuts')
-ax.set_ylabel('Counts')
-ax.set_title('Composition of Sample After MT Identifier at Each Cut')
-ax.set_xticks(x)
-ax.set_xticklabels(cut_labels, rotation=45, ha='right')  # Rotate x labels
-ax.legend()
-plt.tight_layout()
-plt.savefig('/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/MT_ESvCC_composition.png')'''
 
 
-'''with open(f'/eos/user/h/hakins/dune/ML/mt_identifier/benchmark/{cut}mt_id/prediction_results.txt', 'r') as file:
-# Skip the header line
-    next(file)
-    
-    # Read the rest of the lines and convert to integers
-    lines = file.readlines()
-    tp = int(lines[0].strip())
-    tn = int(lines[1].strip())
-    fp = int(lines[2].strip())
-    fn = int(lines[3].strip())
-    all_images_count = int(lines[4].strip())
-    identified_mts.append(tp)
-    incorrect_mts.append(fp)
-    cluster_sizes_mt.append(tp+fn)
-'''
-    
-'''    identified_mts.append(cluster_sizes_mt[i]*percent)
-    incorrect_mts.append(cluster_sizes_bkg[i]*false_pos[i])
-    absolute_true_pos.append((cluster_sizes_mt[i]*percent)/mt_total)
-    absolute_false_pos.append((cluster_sizes_bkg[i]*false_pos[i]/bkg_total))
-    absolute_true_neg.append((cluster_sizes_bkg[i]*true_neg[i])/bkg_total)
-    absolute_false_neg.append((cluster_sizes_mt[i]*false_neg[i])/mt_total)
-'''
     
 
-'''plt.title("Confusion Matrix Values across Different Cuts")
-plt.plot(cuts, absolute_true_pos, marker='o', linestyle='-', color='b', label='True Positives')
-plt.plot(cuts, absolute_true_neg, marker='o', linestyle='-', color='g', label='True Negatives')
-plt.plot(cuts, absolute_false_pos, marker='o', linestyle='-', color='r', label='False Positives')
-plt.plot(cuts, absolute_false_neg, marker='o', linestyle='-', color='m', label='False Negatives')
-plt.xlabel('Cuts')
-plt.ylabel('Fraction')
-plt.legend()
-plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/models_confusion_absolute.png')
-plt.clf()'''
+    
+
 '''# Plotting hyperparameters as a function of cuts
 plt.figure(figsize=(30, 12))
 
@@ -799,15 +677,15 @@ plt.show()'''
 fig = plt.figure()
 plt.title("Number of Clusters vs Charge Cut")
 plt.plot(cuts, bkgs, linestyle='-', color='b', label='BKG')
-plt.plot(cuts, blips, linestyle='-', color='g', label='Blips')
-plt.plot(cuts,cluster_sizes_mt,linestyle='-', color='red', label='MTs')
+plt.plot(cuts, blips, linestyle='-', color='red', label='Blips')
+plt.plot(cuts,cluster_sizes_mt,linestyle='-', color='green', label='MTs')
 plt.xlabel('Cuts')
 plt.ylabel('Clusters')
 plt.legend()
 plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/bkg/clusters_vs_cuts_benchmark.png')
 
 
-
+#Dataset plots
 # Adding labels and title
 plt.xlabel('Cuts')
 plt.ylabel('Clusters [log]')
@@ -823,21 +701,6 @@ plt.yscale('log')
 plt.xscale('log')
 plt.savefig(f'/eos/user/h/hakins/dune/ML/mt_identifier/ds-mix-mt-vs-all/plots/benchmark/bkg/true_labels.png')
 
-
-
-
-#MODEL ANALYSIS
-
-
-
-
-
-
-
-
-
-
-exit()
 #Fraction
 plt.title("Fraction of Background Cut vs Charge Cut")
 plt.plot(cuts, cluster_fraction, linestyle='-', color='b', label='# of Clusters')
